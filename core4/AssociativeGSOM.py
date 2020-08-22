@@ -29,6 +29,12 @@ class AssociativeGSOM(threading.Thread):
         self.display = Display_Utils.Display(None, None)
         self.activity_classes = activity_classes
         self.output_save_location = output_loc
+        self.att = 0.5
+        self.att_learning_rate = 0.01
+        self.recurrent_weights_batch = []
+        self.emotion_features_batch = []
+        self.behaviour_features_batch = []
+        self.BATCH_SIZE = 10
 
         # Parameters for recurrent gsom
         self.globalContexts = np.zeros((self.parameters.NUMBER_OF_TEMPORAL_CONTEXTS, self.dimensions))
@@ -86,6 +92,13 @@ class AssociativeGSOM(threading.Thread):
             for k in range(0, Lock.INPUT_SIZE):
                 # Consume one item
 
+                if k % self.BATCH_SIZE == 0:
+                    Utils.Utilities.update_attentiveness(self.BATCH_SIZE, self.att, self.alphas,
+                                                         self.recurrent_weights_batch, self.emotion_features_batch,
+                                                         self.behaviour_features_batch, self.att_learning_rate)
+                    self.recurrent_weights_batch = []
+                    self.emotion_features_batch = []
+                    self.behaviour_features_batch = []
 
                 Lock.emo_lock.acquire()
                 # print("Consumer thread acquired emotion lock -----", k, "\n")
@@ -116,8 +129,7 @@ class AssociativeGSOM(threading.Thread):
                 Lock.behav_lock.notify()
                 Lock.behav_lock.release()
 
-                data = np.hstack((emotion[0], behaviour[0]))
-                delta_error = grow_in(data, learning_rate, neighbourhood_radius)
+                grow_in(emotion[0],behaviour[0],self.att, learning_rate, neighbourhood_radius)
 
             # Remove all the nodes above the age threshold
             Utils.Utilities.remove_older_nodes(self.gsom_nodemap, self.parameters.AGE_THRESHOLD)
@@ -144,6 +156,11 @@ class AssociativeGSOM(threading.Thread):
 
             for k in range(0, Lock.INPUT_SIZE):
                 # Consume one item
+                if k % self.BATCH_SIZE == 0 :
+                    Utils.Utilities.update_attentiveness(self.BATCH_SIZE,self.att,self.alphas,self.recurrent_weights_batch,self.emotion_features_batch,self.behaviour_features_batch,self.att_learning_rate)
+                    self.recurrent_weights_batch = []
+                    self.emotion_features_batch = []
+                    self.behaviour_features_batch = []
 
                 Lock.emo_smooth_lock.acquire()
                 # print("Consumer thread acquired emotion smoothing lock -----", k, "\n")
@@ -408,7 +425,9 @@ class AssociativeGSOM(threading.Thread):
             self._adjust_weights_for_neighbours(gsom_nodemap[bottom], winner, neigh_radius, learning_rate)
         # dhtfjhfgjgf
 
-    def _grow_for_single_iteration_and_single_input(self, input_vector, learning_rate, neigh_radius):
+    def _grow_for_single_iteration_and_single_input(self, emotion, behaviour,att, learning_rate, neigh_radius):
+
+        input_vector = np.hstack((att*emotion, (1-att)*behaviour))
 
         # Set local references to self variables
         param = self.parameters
@@ -435,8 +454,12 @@ class AssociativeGSOM(threading.Thread):
         # Adjust the weight of the winner
         winner.adjust_weights(self.globalContexts, 1, learning_rate)
 
+        self.recurrent_weights_batch.append(winner.recurrent_weights)
+        self.emotion_features_batch.append(emotion)
+        self.behaviour_features_batch.append(behaviour)
+
         # Update the error value of the winner node
-        delta_error = winner.cal_and_update_error(self.globalContexts, self.alphas)
+        winner.cal_and_update_error(self.globalContexts, self.alphas)
 
         # habituate the neuron
         winner.habituate_neuron(self.parameters.TAU_B)
@@ -452,7 +475,6 @@ class AssociativeGSOM(threading.Thread):
         if winner.error >= param.get_gt(len(input_vector)):
             self._adjust_winner_error(winner, len(input_vector))
 
-        return delta_error
 
     def _adjust_winner_error(self, winner, dimensions):
 

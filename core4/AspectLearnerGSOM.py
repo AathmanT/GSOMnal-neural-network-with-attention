@@ -412,6 +412,7 @@ class AspectLearnerGSOM(threading.Thread):
         # Update the error value of the winner node
         winner.cal_and_update_error(self.globalContexts, self.alphas)
 
+
         # habituate the neuron
         winner.habituate_neuron(self.parameters.TAU_B)
 

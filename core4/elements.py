@@ -107,9 +107,7 @@ class GSOMNode:
         self.recurrent_weights += delta_weights
 
     def cal_and_update_error(self, global_context, alphas):
-        delta_error = Utils.Utilities.get_distance_recurrent(global_context, self.recurrent_weights, alphas)
-        self.error += delta_error
-        return delta_error
+        self.error += Utils.Utilities.get_distance_recurrent(global_context, self.recurrent_weights, alphas)
 
     def map_label_indexes(self, input_label):
         self.mappedLabels_indexes.append(input_label)

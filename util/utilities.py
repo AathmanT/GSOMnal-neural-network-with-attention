@@ -154,6 +154,20 @@ class Utilities:
     def load_object(filename):
         return pickle.load(open(filename+".pickle", "rb"))
 
+    @staticmethod
+    def update_attentiveness(BATCH_SIZE, att,alphas,recurrent_weights_batch,emotion_features_batch,behaviour_features_batch,learning_rate):
+        att_derivative_array = []
+        for i in range(BATCH_SIZE):
+            emotion_zero = np.zeros(emotion_features_batch[i,].shape)
+            beahviour_zero = np.zeros(behaviour_features_batch[i,].shape)
+            global_context = np.hstack((att * emotion_features_batch[i,],beahviour_zero)) + np.hstack((emotion_zero,(1-att)*behaviour_features_batch[i,]))
+
+            err_matrix = np.dot(alphas.T, (global_context - recurrent_weights_batch[i,]))
+            att_derivative = derivative(np.linalg.norm(err_matrix),dx=att)
+            att_derivative_array.append(att_derivative)
+
+        mean_att_derivative = np.asarray(att_derivative_array).mean()
+        att -= mean_att_derivative*learning_rate
 
 class SugenoFuzzyIntregal:
 
@@ -189,14 +203,4 @@ class SugenoFuzzyIntregal:
             temp = SugenoFuzzyIntregal.get_combination_value(values[1:], sugeno_lambda)
             return values[0] + temp + (sugeno_lambda * values[0] * temp)
 
-    @staticmethod
-    def update_attentiveness(att,alphas,recurrent_weights,emotion_features,behaviour_features):
-        emotion_zero = np.zero(emotion_features.shape)
-        beahviour_zero = np.zero(behaviour_features.shape)
-        global_context = np.hstack((att * emotion_features,beahviour_zero)) + np.hstack((emotion_zero,(1-att)*behaviour_features))
 
-        err_matrix = np.dot(alphas.T, (global_context - recurrent_weights))
-        att_derivative = derivative(np.linalg.norm(err_matrix),dx=att)
-
-        att += att_derivative*learning_rate
-        return att
