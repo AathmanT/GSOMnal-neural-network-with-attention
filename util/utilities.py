@@ -5,7 +5,7 @@ import numpy as np
 from scipy import spatial
 from params import params as Params
 import scipy
-
+from scipy.misc import derivative
 class Utilities:
 
     @staticmethod
@@ -188,3 +188,15 @@ class SugenoFuzzyIntregal:
         else:
             temp = SugenoFuzzyIntregal.get_combination_value(values[1:], sugeno_lambda)
             return values[0] + temp + (sugeno_lambda * values[0] * temp)
+
+    @staticmethod
+    def update_attentiveness(att,alphas,recurrent_weights,emotion_features,behaviour_features):
+        emotion_zero = np.zero(emotion_features.shape)
+        beahviour_zero = np.zero(behaviour_features.shape)
+        global_context = np.hstack((att * emotion_features,beahviour_zero)) + np.hstack((emotion_zero,(1-att)*behaviour_features))
+
+        err_matrix = np.dot(alphas.T, (global_context - recurrent_weights))
+        att_derivative = derivative(np.linalg.norm(err_matrix),dx=att)
+
+        att += att_derivative*learning_rate
+        return att

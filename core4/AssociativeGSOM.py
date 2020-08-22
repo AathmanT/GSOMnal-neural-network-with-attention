@@ -86,6 +86,7 @@ class AssociativeGSOM(threading.Thread):
             for k in range(0, Lock.INPUT_SIZE):
                 # Consume one item
 
+
                 Lock.emo_lock.acquire()
                 # print("Consumer thread acquired emotion lock -----", k, "\n")
                 while k > len(Lock.emotion_feature_list) - 1:
@@ -116,7 +117,7 @@ class AssociativeGSOM(threading.Thread):
                 Lock.behav_lock.release()
 
                 data = np.hstack((emotion[0], behaviour[0]))
-                grow_in(data, learning_rate, neighbourhood_radius)
+                delta_error = grow_in(data, learning_rate, neighbourhood_radius)
 
             # Remove all the nodes above the age threshold
             Utils.Utilities.remove_older_nodes(self.gsom_nodemap, self.parameters.AGE_THRESHOLD)
@@ -435,7 +436,7 @@ class AssociativeGSOM(threading.Thread):
         winner.adjust_weights(self.globalContexts, 1, learning_rate)
 
         # Update the error value of the winner node
-        winner.cal_and_update_error(self.globalContexts, self.alphas)
+        delta_error = winner.cal_and_update_error(self.globalContexts, self.alphas)
 
         # habituate the neuron
         winner.habituate_neuron(self.parameters.TAU_B)
@@ -450,6 +451,8 @@ class AssociativeGSOM(threading.Thread):
         # Evaluate winner's weights and grow network it it's above Growth Threshold (GT)
         if winner.error >= param.get_gt(len(input_vector)):
             self._adjust_winner_error(winner, len(input_vector))
+
+        return delta_error
 
     def _adjust_winner_error(self, winner, dimensions):
 
