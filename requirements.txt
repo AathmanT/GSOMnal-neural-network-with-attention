@@ -1,0 +1,7 @@
+matplotlib==3.0.3
+numpy==1.18.1
+pandas==0.25.3
+scipy==1.4.1
+seaborn==0.9.1
+squarify==0.4.3
+tqdm==4.43.0
