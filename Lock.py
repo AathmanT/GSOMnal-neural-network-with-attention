@@ -1,6 +1,6 @@
 import threading
 import numpy as np
-import pandas as pd
+
 
 emo_lock = threading.Condition(threading.Lock())
 behav_lock = threading.Condition(threading.Lock())
@@ -25,22 +25,31 @@ behavior_assign_list = []
 
 final_list = []
 
-INPUT_SIZE = 3800
+INPUT_SIZE = 200
 
 # Colab
-emotion_feature = np.load("/content/drive/My Drive/Dataset/FEATURES/emotion.npy")
-behaviour_feature = np.load("/content/drive/My Drive/Dataset/FEATURES/behavior.npy")
-emotion_label = np.load("/content/drive/My Drive/Dataset/FEATURES/emotion_label.npy")
-behaviour_label = np.load("/content/drive/My Drive/Dataset/FEATURES/behavior_label.npy")
-threat_label = np.load("/content/drive/My Drive/Dataset/FEATURES/threat_label.npy")
+# emotion_feature = np.load("/content/drive/My Drive/Dataset/FEATURES/emotion.npy")
+# behaviour_feature = np.load("/content/drive/My Drive/Dataset/FEATURES/behavior.npy")
+# emotion_label = np.load("/content/drive/My Drive/Dataset/FEATURES/emotion_label.npy")
+# behaviour_label = np.load("/content/drive/My Drive/Dataset/FEATURES/behavior_label.npy")
+# threat_label = np.load("/content/drive/My Drive/Dataset/FEATURES/threat_label.npy")
 
 
 # PC
-# emotion_feature = np.load("data/behavior.npy")
-# behaviour_feature = np.load("data/behavior.npy")
-# emotion_label = np.load("data/emotion_label.npy")
-# behaviour_label = np.load("data/behavior_label.npy")
-# threat_label = np.load("data/threat_label.npy")
+emotion_feature = np.load("data/emotion.npy")
+emotion_feature = emotion_feature[:INPUT_SIZE,:]
+
+behaviour_feature = np.load("data/behavior.npy")
+behaviour_feature = behaviour_feature[:INPUT_SIZE,:]
+
+emotion_label = np.load("data/emotion_label.npy")
+emotion_label = emotion_label[:INPUT_SIZE]
+
+behaviour_label = np.load("data/behavior_label.npy")
+behaviour_label = behaviour_label[:INPUT_SIZE]
+
+threat_label = np.load("data/threat_label.npy")
+threat_label = threat_label[:INPUT_SIZE]
 
 
 

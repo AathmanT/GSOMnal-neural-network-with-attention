@@ -14,3 +14,13 @@ core4/__pycache__/
 params/__pycache__/
 
 util/__pycache__/
+
+output/Exp-2020-08-30-16-28-27/Classifier_data_0.83_T_1_mage_60itr/
+
+output/Exp-2020-08-30-16-11-43/Classifier_data_0.83_T_1_mage_60itr/
+
+data/threat_label.npy
+
+data/emotion_label.npy
+
+data/emotion.npy

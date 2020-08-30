@@ -5,7 +5,8 @@ import numpy as np
 from scipy import spatial
 from params import params as Params
 import scipy
-from scipy.misc import derivative
+
+
 class Utilities:
 
     @staticmethod
@@ -155,15 +156,37 @@ class Utilities:
         return pickle.load(open(filename+".pickle", "rb"))
 
     @staticmethod
+    def calculate_derivative(err_matrix, emotion_new, behaviour_new, alphas):
+        step1 = np.dot(err_matrix,(emotion_new - behaviour_new).T)
+        step2 = np.dot(step1,alphas)
+        numerator = np.trace(step2)
+
+        step3 = np.trace(np.dot(err_matrix.T, err_matrix))
+        denominator = np.sqrt(step3)
+
+        return numerator/denominator
+        # return (np.trace(np.dot(np.dot(err_matrix,(emotion_new - behaviour_new).T),alphas)))/np.sqrt(np.trace(err_matrix))
+
+
+    @staticmethod
     def update_attentiveness(BATCH_SIZE, att,alphas,recurrent_weights_batch,emotion_features_batch,behaviour_features_batch,learning_rate):
         att_derivative_array = []
         for i in range(BATCH_SIZE):
-            emotion_zero = np.zeros(emotion_features_batch[i,].shape)
-            beahviour_zero = np.zeros(behaviour_features_batch[i,].shape)
-            global_context = np.hstack((att * emotion_features_batch[i,],beahviour_zero)) + np.hstack((emotion_zero,(1-att)*behaviour_features_batch[i,]))
+            emotion_reshaped = np.reshape(emotion_features_batch[i],(1, emotion_features_batch[i].size))
+            emotion_zero = np.zeros((emotion_reshaped.shape))
+            behaviour_reshaped = np.reshape(behaviour_features_batch[i],(1, behaviour_features_batch[i].size))
+            beahviour_zero = np.zeros((behaviour_reshaped.shape))
 
-            err_matrix = np.dot(alphas.T, (global_context - recurrent_weights_batch[i,]))
-            att_derivative = derivative(np.linalg.norm(err_matrix),dx=att)
+            emotion_new = np.hstack(( emotion_reshaped,beahviour_zero))
+            behaviour_new = np.hstack((emotion_zero,behaviour_reshaped))
+
+            global_context = att * emotion_new + (1-att) * behaviour_new
+
+            err_matrix = np.dot(np.reshape(alphas,(1,alphas.size)).T, (global_context - recurrent_weights_batch[i]))
+
+            att_derivative = Utilities.calculate_derivative(err_matrix, emotion_new, behaviour_new, np.reshape(alphas,(1,alphas.size)))
+
+
             att_derivative_array.append(att_derivative)
 
         mean_att_derivative = np.asarray(att_derivative_array).mean()

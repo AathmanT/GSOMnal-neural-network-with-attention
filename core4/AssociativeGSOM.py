@@ -92,7 +92,7 @@ class AssociativeGSOM(threading.Thread):
             for k in range(0, Lock.INPUT_SIZE):
                 # Consume one item
 
-                if k % self.BATCH_SIZE == 0:
+                if k!=0 and k % self.BATCH_SIZE == 0:
                     Utils.Utilities.update_attentiveness(self.BATCH_SIZE, self.att, self.alphas,
                                                          self.recurrent_weights_batch, self.emotion_features_batch,
                                                          self.behaviour_features_batch, self.att_learning_rate)
@@ -156,7 +156,7 @@ class AssociativeGSOM(threading.Thread):
 
             for k in range(0, Lock.INPUT_SIZE):
                 # Consume one item
-                if k % self.BATCH_SIZE == 0 :
+                if k!=0 and k % self.BATCH_SIZE == 0 :
                     Utils.Utilities.update_attentiveness(self.BATCH_SIZE,self.att,self.alphas,self.recurrent_weights_batch,self.emotion_features_batch,self.behaviour_features_batch,self.att_learning_rate)
                     self.recurrent_weights_batch = []
                     self.emotion_features_batch = []
@@ -191,9 +191,7 @@ class AssociativeGSOM(threading.Thread):
                 Lock.behav_smooth_lock.notify()
                 Lock.behav_smooth_lock.release()
 
-                smoothing_data = np.hstack((emotion[0], behaviour[0]))
-
-                smooth(smoothing_data, learning_rate, neighbourhood_radius)
+                smooth(emotion[0],behaviour[0],self.att, learning_rate, neighbourhood_radius)
 
         # End of smoothing iterations
         # return self.gsom_nodemap
@@ -373,22 +371,24 @@ class AssociativeGSOM(threading.Thread):
             y_pred.append(winner.get_mapped_labels())
         return y_pred
 
-        # return predictions and weights
-        def predict_x(self, X_test):
-            y_pred = []
-            weights = []
+    # return predictions and weights
+    def predict_x(self, X_test):
+        y_pred = []
+        weights = []
 
-            gsom_nodemap = copy.deepcopy(self.gsom_nodemap)
-            for cur_input in X_test:
-                winner = Utils.Utilities.select_winner(gsom_nodemap, np.array([cur_input]))
-                node_index = Utils.Utilities.generate_index(winner.x, winner.y)
-                y_pred.append(winner.get_mapped_labels())
-                weights.append(winner.recurrent_weights)
+        gsom_nodemap = copy.deepcopy(self.gsom_nodemap)
+        for cur_input in X_test:
+            winner = Utils.Utilities.select_winner(gsom_nodemap, np.array([cur_input]))
+            node_index = Utils.Utilities.generate_index(winner.x, winner.y)
+            y_pred.append(winner.get_mapped_labels())
+            weights.append(winner.recurrent_weights)
 
-            return y_pred, weights
+        return y_pred, weights
 
 
-    def _smooth_for_single_iteration_and_single_input(self, input_vector, learning_rate, neigh_radius):
+    def _smooth_for_single_iteration_and_single_input(self, emotion, behaviour, att, learning_rate, neigh_radius):
+
+        input_vector = np.hstack((att*emotion, (1-att)*behaviour))
 
         param = self.parameters
         gsom_nodemap = self.gsom_nodemap
@@ -406,6 +406,10 @@ class AssociativeGSOM(threading.Thread):
 
         # Adjust the weight of the winner
         winner.adjust_weights(self.globalContexts, 1, learning_rate)
+
+        self.recurrent_weights_batch.append(winner.recurrent_weights)
+        self.emotion_features_batch.append(emotion)
+        self.behaviour_features_batch.append(behaviour)
 
         # habituate the neuron
         winner.habituate_neuron(self.parameters.TAU_B)
@@ -425,7 +429,7 @@ class AssociativeGSOM(threading.Thread):
             self._adjust_weights_for_neighbours(gsom_nodemap[bottom], winner, neigh_radius, learning_rate)
         # dhtfjhfgjgf
 
-    def _grow_for_single_iteration_and_single_input(self, emotion, behaviour,att, learning_rate, neigh_radius):
+    def _grow_for_single_iteration_and_single_input(self, emotion, behaviour, att, learning_rate, neigh_radius):
 
         input_vector = np.hstack((att*emotion, (1-att)*behaviour))
 
